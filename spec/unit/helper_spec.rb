@@ -163,4 +163,51 @@ describe MariaDB::Helper do
       end
     end
   end
+
+  describe '#get_cluster_members' do
+    let(:dummy_class) { Class.new { include MariaDB::Helper } }
+    let(:dummy_helper) { dummy_class.new }
+    let(:shellout) { double(run_command: '', stdout: '') }
+    let(:command) {"mysql -r -B -N -u root -P 3306 -e \"SELECT VARIABLE_VALUE from information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME = 'WSREP_INCOMING_ADDRESSES';\""}
+
+    before do
+      allow(Mixlib::ShellOut).to receive(:new).and_return(shellout)
+    end
+
+    it 'builds the correct command' do
+      expect(Mixlib::ShellOut).to receive(:new).with(
+        command, {:environment=>{"LC_ALL"=>"C.UTF-8", "LANGUAGE"=>"C.UTF-8",
+        "LANG"=>"C.UTF-8"}})
+      expect(shellout).to receive(:live_stream=).and_return(nil)
+      expect(shellout).to receive(:live_stream).and_return(nil)
+      expect(dummy_helper.get_cluster_members('localhost', 'root')).to eq([])
+    end
+
+    context 'no members found' do
+
+      before do
+        allow(Mixlib::ShellOut).to receive(:new).and_return(shellout)
+      end
+
+      it 'returns no members' do
+        expect(shellout).to receive(:live_stream).and_return(nil)
+        expect(shellout).to receive(:live_stream=).and_return(nil)
+        expect(dummy_helper.get_cluster_members('localhost', 'root')).to eq([])
+      end
+    end
+
+    context 'members found' do
+      let(:shellout) { double(run_command: '', stdout: 'galera1,galera2,galera3') }
+
+      before do
+        allow(Mixlib::ShellOut).to receive(:new).and_return(shellout)
+      end
+
+      it 'returns members' do
+        expect(shellout).to receive(:live_stream=).and_return(nil)
+        expect(shellout).to receive(:live_stream).and_return(nil)
+        expect(dummy_helper.get_cluster_members('localhost', 'root')).to eq(['galera1', 'galera2', 'galera3'])
+      end
+    end
+  end
 end

@@ -4,6 +4,7 @@ module MariaDB
   module Helper
     require 'socket'
     require 'timeout'
+    include Chef::Mixin::ShellOut
 
     def do_port_connect(ip, port)
       s = TCPSocket.new(ip, port)
@@ -73,6 +74,18 @@ module MariaDB
           ' Fall back to use community package.'
         false
       end
+    end
+
+    def get_cluster_members(host, user, password=nil, port=3306)
+       members = []
+       query_command = "mysql -r -B -N -u #{user}"
+       query_command += " -p#{password}" if password
+       query_command += " -P #{port}"
+       query_command += " -e \"SELECT VARIABLE_VALUE from information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME = \'WSREP_INCOMING_ADDRESSES\';\""
+       db_query = shell_out(query_command)
+       db_query.run_command
+       members = db_query.stdout.split(',') if db_query.stdout.is_a?(String)
+        return members
     end
   end
 end

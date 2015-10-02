@@ -108,6 +108,17 @@ mariadb_configuration 'galera' do
   action :add
 end
 
+service 'mysql' do
+  service_name node['mariadb']['mysqld']['service_name']
+  supports restart: true
+  action :nothing
+end
+
+service 'start mysql bootstrap cluster' do
+  start_command 'service mysql start --wsrep-new-cluster'
+  action :nothing
+end
+
 #
 # Under debian system we have to change the debian-sys-maint default password.
 # This password is the same for the overall cluster.

@@ -10,6 +10,7 @@ describe 'debian::mariadb::galera10-rsync' do
       node.automatic['memory']['total'] = '2048kB'
       node.automatic['ipaddress'] = '1.1.1.1'
       node.set['mariadb']['rspec'] = true
+      node.set['mariadb']['galera']['leader'] = 'Fauxhai'
     end
     runner.converge('mariadb::galera')
   end
@@ -42,6 +43,18 @@ describe 'debian::mariadb::galera10-rsync' do
 
   it 'Install RSync package' do
     expect(chef_run).to install_package('rsync')
+  end
+
+  it 'Installs build-essential package' do
+    expect(chef_run).to install_package('build-essential')
+  end
+
+  it 'Installs libmariadbclient-dev package' do
+    expect(chef_run).to install_package('libmariadbclient-dev')
+  end
+
+  it 'Install mysql2 chef gem' do
+    expect(chef_run).to install_chef_gem('mysql2')
   end
 
   it 'Configure MariaDB' do
@@ -80,6 +93,16 @@ describe 'debian::mariadb::galera10-rsync' do
       )
     expect(chef_run).to render_file('/etc/mysql/conf.d/galera.cnf')
       .with_content(%r{^wsrep_cluster_address = gcomm://galera1.domain,galera2.domain$})
+  end
+
+  it 'restart mysql service' do
+    expect(chef_run).to_not restart_service('mysql')
+  end
+
+  it 'does not start the mysql bootstrap new cluster service' do
+    expect(chef_run).to_not start_service('start mysql bootstrap cluster').with(
+      start_command: 'service mysql start --wsrep-new-cluster'
+    )
   end
 
   it 'Create Debian conf file' do
